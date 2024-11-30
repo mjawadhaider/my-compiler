@@ -1,0 +1,18 @@
+string a = "My name is";
+a = a + " Jawad";
+int sum;
+sum = 10 + 5 * 3;
+if(5 > 3){
+    return 0;
+}
+else {
+    return sum;
+}
+for (int i = 0; i > 10; i++) {
+    string inLoop = "in loop";
+}
+int c = 0;
+while (c > 10) {
+    int inner = 10;
+}
+int out = 0;
