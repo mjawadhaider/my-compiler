@@ -70,8 +70,6 @@
 
 ## **How to Run**
 
-1. **Compile the Compiler:**:
-   `g++ main.cpp -o main`
+1. **`g++ main.cpp -o main`**
 
-2. **Run the Compiler:**:
-   `./main -o output.txt example.jwd`
+2. **`./main -o output.txt example.jwd`**
