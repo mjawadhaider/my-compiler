@@ -93,7 +93,7 @@ private:
                 symbolInstance = Token{T_STRING, tokens[position].value};
                 expect(T_STRING);
             }
-            else if (tokens[position].type == T_NUM)
+            else if (tokens[position].type == T_NUM || tokens[position].type == T_ID)
             {
                 symbolInstance = parseAndEvaluateExpression();
             }

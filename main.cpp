@@ -3,24 +3,24 @@
 #include <fstream>
 #include <sstream>
 
-#include "utils.cpp"
-#include "lexer.cpp"
-#include "symbolTable.cpp"
-#include "intermediateCodeGenerator.cpp"
-#include "parser.cpp"
+#include "scripts/utils.cpp"
+#include "scripts/lexer.cpp"
+#include "scripts/symbolTable.cpp"
+#include "scripts/intermediateCodeGenerator.cpp"
+#include "scripts/parser.cpp"
+#include "scripts/assemblyGenerator.cpp"
 
 using namespace std;
 
 int main(int argc, char *argv[])
 {
-    if (argc != 4)
+    if (argc != 3)
     {
-        cerr << "Usage: " << argv[0] << " -o <output-file> <input-file>" << endl;
+        cerr << "Usage: " << argv[0] << " -o <input-file>" << endl;
         return 1;
     }
 
-    string inputFileName = argv[3];
-    string outputFileName = argv[2];
+    string inputFileName = argv[2];
 
     ifstream inputFile(inputFileName);
     if (!inputFile.is_open())
@@ -34,34 +34,24 @@ int main(int argc, char *argv[])
     string input = buffer.str();
     inputFile.close();
 
+    // Lexical Analysis
     Lexer lexer(input);
     vector<Token> tokens = lexer.tokenize();
 
-    // for (size_t i = 0; i < tokens.size(); i++)
-    // {
-    //     cout << tokens[i].value << "\t" << getTokenName(tokens[i].type) << endl;
-    // }
-
+    // Symbol Table, ICG, and Parser
     SymbolTable symbolTable;
     IntermediateCodeGenerator icg;
     Parser parser(tokens, symbolTable, icg);
 
     parser.parseProgram();
-    // icg.printInstructions();
+    cout << "\nCompilation completed successfully." << endl;
 
-    ofstream outputFile(outputFileName);
-    if (!outputFile.is_open()) {
-        cerr << "Error: Could not write to file " << outputFileName << endl;
-        return 1;
-    }
+    icg.writeToOutputFile("output/TAC-Output.txt");
 
-    // Output the intermediate code
-    for (const auto &instr : icg.instructions) {
-        outputFile << instr << endl;
-    }
-
-    outputFile.close();
-    cout << "Compilation completed successfully. Intermediate code written to " << outputFileName << endl;
+    // Generate Assembly
+    AssemblyGenerator asmGen;
+    asmGen.generateAssembly(icg.instructions);
+    asmGen.writeToFile("output/Assembly-Output.txt");
     
     return 0;
 }

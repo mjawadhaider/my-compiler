@@ -25,6 +25,22 @@ public:
         instructions.push_back(instr);
     }
 
+    void writeToOutputFile(string fileName)
+    {
+        ofstream outputFile(fileName);
+        if (!outputFile.is_open())
+        {
+            cerr << "Error: Could not write to file " << fileName << endl;
+            exit(1);
+        }
+        for (const auto &instr : instructions)
+        {
+            outputFile << instr << endl;
+        }
+        outputFile.close();
+        cout << "Intermediate code written to " << fileName << endl;
+    }
+
     void printInstructions()
     {
         bool isBlockStarted = false;

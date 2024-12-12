@@ -1,0 +1,44 @@
+MOV R0, My name is
+MOV R1, a
+ADD R1, Jawad
+MOV R2, t0
+MOV R3, 5
+MUL R3, 3
+MOV R4, 10
+ADD R4, t1
+MOV R5, t2
+MOV R6, 5 > 3
+CMP t3, 1
+JNE L1
+JMP L2
+L1:
+MOV R0, 0
+RET
+JMP L3
+L2:
+MOV R0, sum
+RET
+L3:
+MOV R7, 0
+L4:
+MOV R8, i > 10
+CMP t4, 1
+JNE L5
+JMP L6
+L5:
+MOV R9, in loop
+MOV R10, i
+ADD R10, 1
+JMP L4
+L6:
+MOV R11, 0
+L7:
+MOV R12, c > 10
+CMP t5, 1
+JNE L8
+JMP L9
+L8:
+MOV R13, 10
+JMP L7
+L9:
+MOV R14, 0
