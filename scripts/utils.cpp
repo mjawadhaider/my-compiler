@@ -1,4 +1,5 @@
 #include <string>
+#include <map>
 
 using namespace std;
 
@@ -21,6 +22,7 @@ enum TokenType
     T_RBRACE,    // 14
     T_SEMICOLON, // 15
     T_GT,        // 16 ===> For >
+    T_LT,        // 16 ===> For <
     T_EOF,       // 17
     T_FOR,       // 18
     T_WHILE,     // 19
@@ -36,6 +38,19 @@ enum TokenType
     T_CHAR,      // 29
     T_UNDEFINED, // undefined
 };
+
+bool isComparisonOperator(TokenType op)
+{
+    map<TokenType, string> ops;
+    ops[T_LT] = "Less Than";
+    ops[T_GT] = "Greater Than";
+    ops[T_EQ] = "Equals To";
+    ops[T_NEQ] = "Not Equals To";
+    ops[T_LE] = "Less Than Equals To";
+    ops[T_GE] = "Greater Than Equals To";
+
+    return ops.find(op) != ops.end();
+}
 
 string getTokenName(TokenType type)
 {
@@ -74,7 +89,9 @@ string getTokenName(TokenType type)
     case T_SEMICOLON:
         return "semicolon";
     case T_GT:
-        return "greater than";
+        return ">";
+    case T_LT:
+        return "<";
     case T_EOF:
         return "end of file";
     case T_FOR:
@@ -82,13 +99,13 @@ string getTokenName(TokenType type)
     case T_WHILE:
         return "while";
     case T_EQ:
-        return "equal";
+        return "==";
     case T_NEQ:
-        return "not equal";
+        return "!=";
     case T_LE:
-        return "less than or equal";
+        return "<=";
     case T_GE:
-        return "greater than or equal";
+        return ">=";
     case T_AND:
         return "and";
     case T_OR:

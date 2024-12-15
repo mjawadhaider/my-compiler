@@ -2,121 +2,214 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <set>
 #include <fstream>
 
 using namespace std;
 
-class AssemblyGenerator {
-public:
-    vector<string> assemblyCode; // Holds the generated assembly instructions
-    map<string, string> tempToRegister; // Map for temp variables to registers
-    int registerCount = 0; // For tracking used registers
+class AssemblyGenerator
+{
+private:
+    vector<string> assemblyCode;            // Holds the generated assembly code
+    map<string, string> variableToRegister; // Maps variables to registers
+    map<string, string> registerToVariable; // Maps registers to variables
+    vector<string> availableRegisters;      // Pool of available x86 registers
+    set<string> tempVariables;              // Tracks temporary variables
 
-    string getRegister() {
-        return "R" + to_string(registerCount++);
+public:
+    AssemblyGenerator()
+    {
+        // Initialize available x86 registers
+        availableRegisters = {"EAX", "EBX", "ECX", "EDX"};
     }
 
-    void generateAssembly(const vector<string> &tacInstructions) {
-        for (const string &instr : tacInstructions) {
-            if (instr.find(" = ") != string::npos) {
-                handleAssignment(instr);
-            } else if (instr.find("if ") != string::npos) {
-                handleConditionalJump(instr);
-            } else if (instr.find("goto") != string::npos) {
-                handleUnconditionalJump(instr);
-            } else if (instr.find("return") != string::npos) {
-                handleReturn(instr);
-            } else if (instr.find(":") != string::npos) {
-                handleLabel(instr);
+    // Generate x86 assembly code from TAC
+    // Generate x86 assembly code from TAC
+    void generateAssembly(const vector<string> &tacLines, const string &outputFile)
+    {
+        for (const string &line : tacLines)
+        {
+            string trimmedLine = trim(line);
+            vector<string> tokens = split(trimmedLine, ' ');
+
+            // cout << "------------------ Start-----------------------" << endl;
+            // for (size_t i = 0; i < tokens.size(); i++)
+            // {
+            //     cout << "tokens[i]: " << tokens[i] << endl;
+            // }
+            // cout << "------------------ End-----------------------" << endl;
+            
+
+            if (tokens.empty()) continue; // Skip empty lines
+
+            // Handle different TAC instructions
+            if (tokens.size() == 3 && tokens[1] == "=") {
+                handleAssignment(tokens);
+            }
+            else if (tokens.size() == 5 && (tokens[3] == "+" || tokens[3] == "-" || tokens[3] == "*" || tokens[3] == "/")) {
+                handleArithmetic(tokens);
+            }
+            else if (tokens.size() == 4 && tokens[0] == "if") {
+                handleConditionalJump(tokens);
+            }
+            else if (tokens.size() == 2 && tokens[0] == "goto") {
+                handleUnconditionalJump(tokens);
+            }
+            else if (tokens.size() == 1 && tokens[0].back() == ':') {
+                handleLabel(tokens);
+            }
+            else if (tokens.size() == 2 && tokens[0] == "return") {
+                handleReturn(tokens);
+            }
+            else if (tokens.size() == 5 && (tokens[3] == ">" || tokens[3] == "<")) {
+                handleComparison(tokens);
+            }
+            else {
+                cerr << "Error: Unrecognized TAC instruction: " << line << endl;
             }
         }
+        // Write all assembly instructions to the file
+        writeToFile(outputFile);
     }
 
-    void handleAssignment(const string &instr) {
-        // Example: t0 = x + y
-        size_t eqPos = instr.find("=");
-        string lhs = trim(instr.substr(0, eqPos));
-        string rhs = trim(instr.substr(eqPos + 1));
+    // Handle simple assignments: a = b
+    void handleAssignment(const vector<string> &tokens)
+    {
+        string dest = tokens[0];
+        string src = tokens[2];
+        assemblyCode.push_back("    MOV " + getRegister(dest) + ", " + src);
+    }
 
-        if (rhs.find("+") != string::npos || rhs.find("-") != string::npos ||
-            rhs.find("*") != string::npos || rhs.find("/") != string::npos) {
-            // Handle arithmetic
-            handleArithmetic(lhs, rhs);
-        } else {
-            // Simple assignment
-            string reg = getRegister();
-            assemblyCode.push_back("MOV " + reg + ", " + rhs);
-            tempToRegister[lhs] = reg;
+    // Handle arithmetic operations: temp = a + b, a - b, etc.
+    void handleArithmetic(const vector<string> &tokens)
+    {
+        string dest = tokens[0];
+        string left = tokens[2];
+        string right = tokens[4];
+        string op = tokens[3];
+
+        string leftReg = getRegister(left);
+
+        // Load left operand into the register
+        assemblyCode.push_back("    MOV " + leftReg + ", " + left);
+
+        if (op == "+") {
+            assemblyCode.push_back("    ADD " + leftReg + ", " + right);
+        } else if (op == "-") {
+            assemblyCode.push_back("    SUB " + leftReg + ", " + right);
+        } else if (op == "*") {
+            assemblyCode.push_back("    IMUL " + leftReg + ", " + right);
+        } else if (op == "/") {
+            assemblyCode.push_back("    IDIV " + right);
         }
+
+        // Store the result back to the destination
+        assemblyCode.push_back("    MOV " + dest + ", " + leftReg);
     }
 
-    void handleArithmetic(const string &lhs, const string &rhs) {
-        // Example: t0 = x + y
-        string reg1 = getRegister();
-        size_t opPos;
-        string op;
-
-        if ((opPos = rhs.find("+")) != string::npos) op = "ADD";
-        else if ((opPos = rhs.find("-")) != string::npos) op = "SUB";
-        else if ((opPos = rhs.find("*")) != string::npos) op = "MUL";
-        else if ((opPos = rhs.find("/")) != string::npos) op = "DIV";
-
-        string operand1 = trim(rhs.substr(0, opPos));
-        string operand2 = trim(rhs.substr(opPos + 1));
-
-        assemblyCode.push_back("MOV " + reg1 + ", " + operand1);
-        assemblyCode.push_back(op + " " + reg1 + ", " + operand2);
-        tempToRegister[lhs] = reg1;
+    // Handle conditional jumps: if temp goto L1
+    void handleConditionalJump(const vector<string> &tokens)
+    {
+        string condition = tokens[1];
+        string label = tokens[3];
+        assemblyCode.push_back("    CMP " + condition + ", 0");
+        assemblyCode.push_back("    JNE " + label);
     }
 
-    void handleConditionalJump(const string &instr) {
-        // Example: if t0 goto L1
-        size_t ifPos = instr.find("if");
-        size_t gotoPos = instr.find("goto");
-        string condition = trim(instr.substr(ifPos + 2, gotoPos - ifPos - 2));
-        string label = trim(instr.substr(gotoPos + 4));
-
-        assemblyCode.push_back("CMP " + condition + ", 1");
-        assemblyCode.push_back("JNE " + label);
+    // Handle unconditional jumps: goto L1
+    void handleUnconditionalJump(const vector<string> &tokens)
+    {
+        string label = tokens[1];
+        assemblyCode.push_back("    JMP " + label);
     }
 
-    void handleUnconditionalJump(const string &instr) {
-        // Example: goto L1
-        size_t gotoPos = instr.find("goto");
-        string label = trim(instr.substr(gotoPos + 4));
-        assemblyCode.push_back("JMP " + label);
+    // Handle labels: L1:
+    void handleLabel(const vector<string> &tokens)
+    {
+        assemblyCode.push_back(tokens[0]);
     }
 
-    void handleReturn(const string &instr) {
-        // Example: return x
-        size_t retPos = instr.find("return");
-        string value = trim(instr.substr(retPos + 6));
-        assemblyCode.push_back("MOV R0, " + value);
-        assemblyCode.push_back("RET");
+    // Handle return statements: return value
+    void handleReturn(const vector<string> &tokens)
+    {
+        string value = tokens[1];
+        assemblyCode.push_back("    MOV eax, " + value);
+        assemblyCode.push_back("    int 0x80"); // Exit syscall
     }
 
-    void handleLabel(const string &instr) {
-        // Example: L1:
-        assemblyCode.push_back(instr);
-    }
+    // Handle comparisons: temp = a > b or temp = a < b
+    void handleComparison(const vector<string> &tokens)
+    {
+        string dest = tokens[0];
+        string left = tokens[2];
+        string right = tokens[4];
+        string op = tokens[3];
 
-    string trim(const string &s) {
-        size_t start = s.find_first_not_of(" \t");
-        size_t end = s.find_last_not_of(" \t");
-        return (start == string::npos) ? "" : s.substr(start, end - start + 1);
-    }
+        string leftReg = getRegister(left);
 
-    void writeToFile(const string &outputFile) {
-        ofstream out(outputFile);
-        for (const auto &line : assemblyCode) {
-            out << line << endl;
+        assemblyCode.push_back("    MOV " + leftReg + ", " + left);
+        assemblyCode.push_back("    CMP " + leftReg + ", " + right);
+
+        if (op == ">") {
+            assemblyCode.push_back("    SETg AL");
+        } else if (op == "<") {
+            assemblyCode.push_back("    SETl AL");
         }
-        out.close();
-        cout << "Assembly Code written to " << outputFile << endl;
+
+        assemblyCode.push_back("    MOVzx " + dest + ", AL");
     }
 
-    void printAssembly() {
+    // Helper function to get a register for a variable
+    string getRegister(const string &var)
+    {
+        if (variableToRegister.find(var) == variableToRegister.end()) {
+            string reg = availableRegisters.back();
+            availableRegisters.pop_back();
+            variableToRegister[var] = reg;
+        }
+        return variableToRegister[var];
+    }
+
+    // Write the generated assembly code to a file
+    void writeToFile(const string &outputFile)
+    {
+        ofstream asmFile(outputFile);
         for (const auto &line : assemblyCode) {
+            asmFile << line << endl;
+        }
+        asmFile.close();
+        cout << "Assembly code generated in " << outputFile << endl;
+    }
+
+    // Helper function: Split a string by a delimiter
+    vector<string> split(const string &line, char delimiter)
+    {
+        vector<string> tokens;
+        string token;
+        istringstream tokenStream(line);
+        cout << "line.find('\"'): " << line.find('\"') << endl;
+        if (line.find('\"') != string::npos) {
+            
+        }
+        while (getline(tokenStream, token, delimiter)) {
+            cout << "token: " << token << endl;
+            if (!token.empty()) tokens.push_back(token);
+        }
+        return tokens;
+    }
+
+    // Helper function: Trim whitespace from a string
+    string trim(const string &str)
+    {
+        size_t start = str.find_first_not_of(" \t");
+        size_t end = str.find_last_not_of(" \t");
+        return (start == string::npos || end == string::npos) ? "" : str.substr(start, end - start + 1);
+    }
+
+    void printAssembly()
+    {
+        for (const auto &line : assemblyCode)
+        {
             cout << line << endl;
         }
     }

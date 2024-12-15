@@ -101,8 +101,16 @@ private:
         symbolInstance.type = dataType;
         symbolTable.declareVariable(identifierName, symbolInstance);
         expect(T_SEMICOLON);
-        if (symbolInstance.value != "")
+        if (symbolInstance.icgVariable != "")
+            icg.addInstruction(identifierName + " = " + symbolInstance.icgVariable);
+        else if (symbolInstance.value != "")
+        {
+            if (symbolInstance.type == T_STRING)
+            {
+                symbolInstance.value = "\"" + symbolInstance.value + "\"";
+            }
             icg.addInstruction(identifierName + " = " + symbolInstance.value);
+        }
     }
 
     string parseAssignment(bool generateIntermediateCode = true)
@@ -250,7 +258,8 @@ private:
         {
             string op = tokens[position].type == T_PLUS ? "+" : "-";
             position++;
-            Token nextTerm = parseTerm();
+            bool isNextTermIdentifier = false;
+            Token nextTerm = parseTerm(&isNextTermIdentifier);
             string nextTermValue = nextTerm.value;
             TokenType nextTermType = result.type;
             if (nextTerm.type == T_ID)
@@ -279,22 +288,29 @@ private:
             }
             string newVar = icg.newTemp();
             string nextTermVar = nextTerm.icgVariable == "" ? nextTerm.value : nextTerm.icgVariable;
+            cout << "isNextTermIdentifier: " << isNextTermIdentifier << endl;
+            if (result.type == T_STRING && !isNextTermIdentifier)
+            {
+                nextTermVar = "\"" + nextTermVar + "\"";
+            }
             icg.addInstruction(newVar + " = " + result.icgVariable + " " + op + " " + nextTermVar);
             result.icgVariable = newVar;
         }
-        if (tokens[position].type == T_GT)
+        // if (tokens[position].type == T_GT || tokens[position].type == T_LT || tokens[position].type == T_EQ)
+        if (isComparisonOperator(tokens[position].type))
         {
+            TokenType comparisonOp = tokens[position].type;
             position++;
             Token nextExp = parseAndEvaluateExpression();
             string nextExpVar = nextExp.icgVariable == "" ? nextExp.value : nextExp.icgVariable;
             string icgVar = icg.newTemp();
-            icg.addInstruction(icgVar + " = " + result.icgVariable + " > " + nextExpVar);
+            icg.addInstruction(icgVar + " = " + result.icgVariable + " " + getTokenName(comparisonOp) + " " + nextExpVar);
             result.icgVariable = icgVar;
         }
         return result;
     }
 
-    Token parseTerm()
+    Token parseTerm(bool *isNextTermIdentifier = nullptr)
     {
         Token factor = parseFactor();
         Token result = factor;
@@ -302,6 +318,8 @@ private:
         {
             result = symbolTable.getVariableToken(factor.value);
             result.icgVariable = factor.value;
+            if (isNextTermIdentifier != nullptr)
+                *isNextTermIdentifier = true;
         }
         while (tokens[position].type == T_MUL || tokens[position].type == T_DIV)
         {
@@ -319,6 +337,8 @@ private:
                     showErrorMessagesAndExit(getQuotesAroundStr(nextFactor.value) + " has value undefined!");
 
                 nextFactorValue = symbolInstance.value;
+                if (isNextTermIdentifier != nullptr)
+                    *isNextTermIdentifier = true;
             }
 
             string resultStr = result.icgVariable == "" ? result.value : result.icgVariable;

@@ -1,44 +1,44 @@
-MOV R0, My name is
-MOV R1, a
-ADD R1, Jawad
-MOV R2, t0
-MOV R3, 5
-MUL R3, 3
-MOV R4, 10
-ADD R4, t1
-MOV R5, t2
-MOV R6, 5 > 3
-CMP t3, 1
-JNE L1
-JMP L2
+    MOV EDX, "Jawad"
+    MOV ECX, a
+    ADD ECX, b
+    MOV temp_0, ECX
+    MOV ECX, temp_0
+    MOV EBX, 10
+    MOV EAX, 5
+    IMUL EAX, 3
+    MOV temp_1, EAX
+    MOV , 10
+    ADD , temp_1
+    MOV temp_2, 
+    MOV EBX, temp_2
+    MOV EAX, 5
+    CMP EAX, 3
+    SETg AL
+    MOVzx temp_3, AL
+    CMP temp_3, 0
+    JNE L1
+    JMP L2
 L1:
-MOV R0, 0
-RET
-JMP L3
+    MOV eax, 0
+    int 0x80
+    JMP L3
 L2:
-MOV R0, sum
-RET
+    MOV eax, sum
+    int 0x80
 L3:
-MOV R7, 0
+    MOV , 0
 L4:
-MOV R8, i > 10
-CMP t4, 1
-JNE L5
-JMP L6
+    MOV , i
+    CMP , 10
+    SETg AL
+    MOVzx temp_4, AL
+    CMP temp_4, 0
+    JNE L5
+    JMP L6
 L5:
-MOV R9, in loop
-MOV R10, i
-ADD R10, 1
-JMP L4
+    MOV EBX, 10
+    MOV , i
+    ADD , 1
+    MOV i, 
+    JMP L4
 L6:
-MOV R11, 0
-L7:
-MOV R12, c > 10
-CMP t5, 1
-JNE L8
-JMP L9
-L8:
-MOV R13, 10
-JMP L7
-L9:
-MOV R14, 0

@@ -101,6 +101,32 @@ public:
                 continue;
             }
 
+            // Handle Multi-character Operators (==, <=, >=)
+            if (current == '=' && src[position + 1] == '=')
+            {
+                tokens.push_back(Token{T_EQ, "==", lineNumber});
+                position += 2;
+                continue;
+            }
+            else if (current == '!' && src[position + 1] == '=')
+            {
+                tokens.push_back(Token{T_NEQ, "!=", lineNumber});
+                position += 2;
+                continue;
+            }
+            else if (current == '<' && src[position + 1] == '=')
+            {
+                tokens.push_back(Token{T_LE, "<=", lineNumber});
+                position += 2;
+                continue;
+            }
+            else if (current == '>' && src[position + 1] == '=')
+            {
+                tokens.push_back(Token{T_GE, ">=", lineNumber});
+                position += 2;
+                continue;
+            }
+
             // Add OPERATORS in the tokens vector
             switch (current)
             {
@@ -137,15 +163,9 @@ public:
             case '>':
                 tokens.push_back(Token{T_GT, ">", lineNumber});
                 break;
-            // case '==':
-            //     tokens.push_back(Token{T_EQ, "==", lineNumber});
-            //     break;
-            // case '>=':
-            //     tokens.push_back(Token{T_GE, ">=", lineNumber});
-            //     break;
-            // case '<=':
-            //     tokens.push_back(Token{T_GE, "<=", lineNumber});
-            //     break;
+            case '<':
+                tokens.push_back(Token{T_LT, "<", lineNumber});
+                break;
             default:
                 cout << "Unexpected character: " << current << endl;
                 exit(1);
@@ -153,6 +173,8 @@ public:
             position++;
         }
         tokens.push_back(Token{T_EOF, "", lineNumber});
+
+        // printTokens(tokens);
         return tokens;
     }
 
@@ -170,5 +192,13 @@ public:
         while (position < src.size() && isalnum(src[position]))
             position++;
         return src.substr(start, position - start);
+    }
+
+    void printTokens(vector<Token> tokens)
+    {
+        for (size_t i = 0; i < tokens.size(); i++)
+        {
+            cout << tokens[i].value << "\t" << getTokenName(tokens[i].type) << "\t" << tokens[i].lineNumber << endl;
+        }
     }
 };

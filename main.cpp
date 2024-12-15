@@ -50,8 +50,8 @@ int main(int argc, char *argv[])
 
     // Generate Assembly
     AssemblyGenerator asmGen;
-    asmGen.generateAssembly(icg.instructions);
-    asmGen.writeToFile("output/Assembly-Output.txt");
-    
+    asmGen.generateAssembly(icg.instructions, "output/Assembly-Output.txt");
+    // asmGen.writeToFile("output/Assembly-Output.txt");
+    cout << endl;
     return 0;
 }

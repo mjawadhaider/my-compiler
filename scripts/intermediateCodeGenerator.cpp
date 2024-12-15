@@ -12,7 +12,7 @@ public:
 
     string newTemp()
     {
-        return "t" + to_string(tempCount++);
+        return "temp_" + to_string(tempCount++);
     }
 
     string newLabel()
@@ -22,7 +22,10 @@ public:
 
     void addInstruction(const string &instr)
     {
-        instructions.push_back(instr);
+        if (instr[0] == 'L')
+            instructions.push_back(instr);
+        else 
+            instructions.push_back("    " + instr);
     }
 
     void writeToOutputFile(string fileName)
@@ -38,7 +41,7 @@ public:
             outputFile << instr << endl;
         }
         outputFile.close();
-        cout << "Intermediate code written to " << fileName << endl;
+        cout << "Intermediate code written to " << "output/TAC-Output.txt" << endl;
     }
 
     void printInstructions()
